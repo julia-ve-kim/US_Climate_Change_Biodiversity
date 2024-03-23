@@ -1,10 +1,14 @@
 #### Preamble ####
-# Purpose: Replicate Table 1, Figures 1(a), 1(b) in Moore et al.'s paper titled "COVID-19, School Closures, and
-# Outcomes" found at https://www.journals.uchicago.edu/doi/epdf/10.1086/716662. 
+# Purpose: Replicate Table 1, Figures 1(a), 1(b) in Moore et al.'s paper titled "Noah’s Ark 
+# on Rising Seas: Climate Change, Biodiversity Loss and Public Adaptation Costs in 
+# the United States" found at https://www.journals.uchicago.edu/doi/epdf/10.1086/716662. 
 # Author: Julia Kim 
-# Date: 2 April 2024 
+# Date: 23 March 2024 
 # Contact:juliaym.kim@mail.utoronto.ca
 # License: MIT
+# Any other additional info? Moore et al. include a copy of their code here
+# https://dataverse.harvard.edu/file.xhtml?fileId=4931778&version=1.0. The following code 
+# references and builds on their work. 
 
 #### Workspace Setup ####
 library(tidyverse)
@@ -110,7 +114,73 @@ cleaned_species_data |>
   labs(x="Taxon", y="Proportion", fill="Status") + 
   geom_text(aes(x = taxon, y = 1.05, label = total), size=3)  # add counts for each taxon above the stacked chart
 
-#### FIGURE 2 #### 
-# set ngrams with suspicious ratio, i.e., for which the ratio of ngram_common to ngram_science is 
-# greater than 10 to "NA" 
-species_data$ngram_common[which(abs(species_data$ngram_common / species_data$ngram_science) > 10)] = NA
+#### FIGURE 2 ####
+# load in model 
+fit1 <- readRDS("models/species_listing_model.rds")
+
+# convert values to probabilities of listing 
+taxconsmeans <- species_data |> 
+  # remove rows where status is NA
+  filter(!is.na(status)) |> 
+  # filter rows where ngram_common_flag is 0
+  filter(ngram_common_flag == 0) |> 
+  # group by taxon and status
+  group_by(taxon, status) |> 
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngram_common = median(ngram_common, na.rm = TRUE),
+    ngram_science = median(ngram_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE))
+  ) 
+
+# use coefficients from fit to find conditional probabilities of listing for taxon-status groups 
+taxon <- levels(factor(species_data$taxon)) 
+status <- levels(factor(species_data$status)) 
+
+# use coefficients from fit to find conditional probabilities of listing for taxon-status groups
+for (i in 1:length(taxon)) {
+  for (j in 1:length(status)) {
+    # calculate intercept for the logistic regression model
+    intercept = fit1$coefficients[1] +
+      # add taxon coefficient if i is not 1
+      ifelse(i == 1, 0, fit1$coefficients[grep(taxon[i], names(fit1$coefficients))]) +
+      # add status coefficient if j is not 1 or use 'Extinct' coefficient if j is 6
+      ifelse(j == 1, 0,
+             ifelse(j == 6, fit1$coefficients[grep("Extinct", names(fit1$coefficients))],
+                    fit1$coefficients[grep(status[j], names(fit1$coefficients))]))
+    # subset taxconsmeans dataframe based on current 'taxon[i]' and 'status[j]'
+    taxmeanstemp = taxconsmeans[which(taxconsmeans$taxon == taxon[i]), ]
+    taxmeanstemp = taxmeanstemp[ifelse(j == 6, grep("Extinct", taxmeanstemp$status),
+                                       grep(status[j], taxmeanstemp$status)), ]
+    # calculate fitted values for the logistic regression model
+    fit = intercept + as.numeric(taxmeanstemp[3:5]) %*% fit1$coefficients[17:19]
+    # transform fitted values into probabilities using the logistic function
+    fitprob = exp(fit) / (1 + exp(fit))
+    # assign 'fitprob' to 'taxconfit' if it's the first iteration
+    if (i == 1 & j == 1) 
+      taxconfit = fitprob
+    # append 'fitprob' to 'taxconfit' for subsequent iterations
+    if (i > 1 | j > 1) 
+      taxconfit = append(taxconfit, fitprob)
+  }
+}
+
+# create a data frame with taxon, status, and fitted probabilities
+taxconfit <- data.frame(
+  taxon = rep(taxon, each = length(status)),   
+  status = rep(status, length(taxon)),         
+  fitprob = taxconfit                         
+)
+
+# specify shapes for each taxon category
+shape_values <- c(1, 2, 3, 4, 5, 6, 7, 8, 9)  # specify shapes for each taxon category
+
+# plot data 
+taxconfit |>
+  # filter out "Extinct" and "Prob. Extinct" statuses and "2" taxon
+  filter(!(status %in% c("Extinct", "Prob. Extinct") | status == "2")) |> 
+  ggplot(aes(x = status, y = fitprob, group = taxon, col = taxon, pch = taxon)) + 
+  geom_point(size = 3, stroke = 0.75) + 
+  labs(x = "Assessed Conservation Status", y = "Predicted Probability of Listing") + 
+  theme_minimal() +
+  scale_shape_manual(values = shape_values)  # manually specify shape values

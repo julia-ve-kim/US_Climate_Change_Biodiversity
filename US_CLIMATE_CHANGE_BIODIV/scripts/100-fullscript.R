@@ -82,7 +82,222 @@ library(readr)
 # #some ngram NAs for species that return no results because of low frequency can be recoded as 0
 # dat$ngram_common[which(is.na(dat$ngram_common))]=0
 # dat$ngram_science[which(is.na(dat$ngram_science))]=0
+# library(tidyverse)
+library(clusterSEs)
+library(lfe)
+library(MASS)
+library(plyr)
+library(reshape2)
+library(stargazer)
+library(lubridate)
+library(readr) 
+
+#Commented code below creates the dataset "speciesdata.csv" from intermediate data files
+
+# datfull=read.csv("Writing Up and Presentations/JAERE Submission/JAERE Resubmission/Data/NSESA Full Dataset with NGrams April 2021.csv")
 # 
+# #identify species where NatureServe conservation status was determined after delisting
+# datfull$Date.Final.Rule.to.Delist<-year(mdy(datfull$Date.Final.Rule.to.Delist))
+# probs=unique(datfull$EGT_Species.Code[which(datfull$G_RANK_C_D>datfull$Date.Final.Rule.to.Delist)])
+# #identify species that were listed more than 10 years after NatureServe assessment
+# probs=c(probs,unique(datfull$EGT_Species.Code[which(datfull$G_RANK_C_D<(datfull$USFWS_Earliest.Date.Listed-10))]))
+# save(probs,file="Writing Up and Presentations/JAERE Submission/JAERE Resubmission/problemspecies.Rdat")
+# 
+# #fill in some missing family data
+# fams=read.csv("All Listings with Family Info.csv")
+# fams=fams%>%dplyr::select(Species.Code,Family)
+# fams=unique(fams)
+# 
+# missingfams=unique(datfull$Species.Code[which(is.na(datfull$FAMILY))])
+# for(i in 1:length(missingfams)){
+#   fam=fams$Family[which(fams$Species.Code==as.character(missingfams[i]))]
+#   #test whether we need to add a new level
+#   if(!fam%in%levels(datfull$FAMILY)) levels(datfull$FAMILY)=c(levels(datfull$FAMILY),as.character(fam))
+# 
+#   datfull$FAMILY[which(datfull$Species.Code==missingfams[i])]=fam
+# }
+# 
+# #read in biology data
+# bio=read.csv("From Xiaoli/out_EcoEvoVar.csv")
+# 
+# #additional data for revision
+# bio_adds=read.csv("From Xiaoli/missingNew_eev.csv")
+# bio_adds=data.frame(X=NA,EGT_ID=bio_adds$code,sp=bio_adds$species,tax=NA,genus=NA,species=NA,ED=NA,EDGE=bio_adds$EDGE,maxSp=bio_adds$maxSp)
+# bio=rbind(bio,bio_adds)
+# 
+# 
+# #zeroes in number of species in genus data are actually NAs
+# bio$maxSp[which(bio$maxSp==0)]=NA
+# #calculate global endangered score (GE) from EDGE and ED formulas
+# bio$GE=(bio$EDGE-log(bio$ED+1))/log(2)
+# 
+# datfull=merge(datfull,bio[,c(2,7:10)],all.x=T,all.y=F)
+# 
+# #merge in manually added ngenus for some listed species
+# gen_add=read.csv("fill_missinggenusdata.csv")
+# for(i in 1:dim(gen_add)[1]) datfull$maxSp[which(as.character(datfull$GENUS)==as.character(gen_add$x[i]))]=gen_add$ngenus[i]
+# 
+# #coalesce datfull$Group.Lumped and class_lumped
+# datfull$Group.Lumped<-as.character(datfull$Group.Lumped)
+# datfull$class_lumped<-as.character(datfull$class_lumped)
+# datfull$Tax.Group <- ifelse(is.na(datfull$Group.Lumped), datfull$class_lumped, datfull$Group.Lumped)
+# 
+# dat=data.frame(code=datfull$EGT_Species.Code,name=datfull$GNAME,taxon=datfull$Tax.Group,family=datfull$FAMILY,order=datfull$TAXORDER,genus=datfull$GENUS,status_species=datfull$N_CON_STAT,status_global=datfull$G_CON_STAT,year=datfull$Year,spending=datfull$Exp_Total.Expenditures,region=datfull$Lead.Region,region_num=datfull$Number.of.Occurrence.Regions,priority=datfull$RR_Num.Min.Priority.Number,priority_threat=datfull$Degree.of.Threat,priority_potential=datfull$Recovery.Potential,priority_rarity=datfull$Rarity,conflict=datfull$RR_Conflict.Designation,status=datfull$Exp_Listing.Classification,datelisted=datfull$USFWS_Earliest.Date.Listed,ngenus=datfull$maxSp,evdist=datfull$ED,ge=datfull$GE,edge=datfull$EDGE,rangeareas=datfull$USFWS_Range.Area.KMSQ)
+# 
+# #new variable - from 1950 to 10 years before listing for listed species, mean 1950 - present for non-listed species
+# ngrams<-datfull
+# ngrams$Scientific=ngrams$Scientific_1950_Listed;ngrams$Scientific[which(is.na(ngrams$Scientific_1950_Listed))]=ngrams$Scientific_1950[which(is.na(ngrams$Scientific_1950_Listed))]
+# ngrams$Common=ngrams$Common_1950_Listed;ngrams$Common[which(is.na(ngrams$Common_1950_Listed))]=ngrams$Common_1950[which(is.na(ngrams$Common_1950_Listed))]
+# ngrams=data.frame(code=ngrams$EGT_Species.Code,year=ngrams$Year,ngram_science=ngrams$Scientific,ngram_common=ngrams$Common)
+# 
+# #Adding manually flagged
+# manual<-read.csv("Writing Up and Presentations/JAERE Submission/JAERE Resubmission/Data/Manual NGram Flagged Common Name.csv")
+# ngrams<-left_join(ngrams, manual)
+# ngrams<-distinct(ngrams)
+# ngrams$CommonNameFlag[which(is.na(ngrams$CommonNameFlag))]=0
+# 
+# ngrams$ngram_common[which(ngrams$ngram_common>0.8)]=NA
+# #ngram NAs are actually true zeroes - not high enough frequency to return an ngram
+# ngrams$ngram_common[which(is.na(ngrams$ngram_common))]=0;ngrams$ngram_science[which(is.na(ngrams$ngram_science))]=0
+# ngrams$CommonNameFlag[which(is.na(ngrams$CommonNameFlag))]=0
+# 
+# dat=merge(dat,ngrams,all.x=TRUE,all.y=FALSE)
+# 
+# #some ngram NAs for species that return no results because of low frequency can be recoded as 0
+# dat$ngram_common[which(is.na(dat$ngram_common))]=0
+# dat$ngram_science[which(is.na(dat$ngram_science))]=0
+# 
+# #identify some problem common name ngrams based on ratio with science ngrams
+# dat$CommonNameFlag[which(dat$ngram_common/dat$ngram_science>1000)]=1
+# 
+# # #normalize ngrams
+# dat$ngram_common=(dat$ngram_common-mean(dat$ngram_common,na.rm=T))/sd(dat$ngram_common,na.rm=T)
+# dat$ngram_science=(dat$ngram_science-mean(dat$ngram_science,na.rm=T))/sd(dat$ngram_science,na.rm=T)
+
+# speciesdat=dat%>%
+#   group_by(code)%>%
+#   dplyr::summarize(taxon=taxon[1],family=family[1],order=order[1],name=name[1],listed=status[1],status=status_species[1],status_global=status_global[1],ngram_science=mean(ngram_science,na.rm=T),ngram_common_flag=CommonNameFlag[1],ngram_common=mean(ngram_common,na.rm=T),ngenus=ngenus[1],evdist=evdist[1],ge=ge[1],edge=edge[1])
+# speciesdat$listed=ifelse(speciesdat$listed%in%levels(dat$status)[c(4:9,13)],1,0)
+
+# speciesdat$probs=0;speciesdat$probs[probs]=1 #identify problem species from lines 15-19
+
+# 
+# save(speciesdat,file="Writing Up and Presentations/JAERE Submission/JAERE Resubmission/speciesdata.Rdat")
+
+#1. ----------first model - model binary listing decision---------------------
+
+speciesdat= read.csv(here::here("data/raw_data/speciesdata.csv"))
+
+#make figure 1b
+pattern.type=c("blank","hdashes","Rsymbol_20","crosshatch","bricks","vdashes")
+pattern.color=rep("black",6)
+background.color=c("#E7298A","#D95F02","#E6AB02", "#1B9E77","#66A61E", "#7570B3")
+toplot=speciesdat%>%
+  filter(status%in%c(1,2,3,4,5,"UNK"))%>%
+  add_count(taxon)%>%
+  group_by(taxon,status)%>%
+  dplyr::summarize(frac=n(),tot=n[1])%>%
+  mutate(perc=frac/tot)
+
+a=ggplot(toplot,aes(x=taxon,y=frac,fill=status))+geom_bar(stat="identity",position="fill",col="black")+theme_bw()
+a=a+theme(text=element_text(size=20),axis.text.x = element_text(angle = 45, hjust = 1, face="bold"))+labs(x="Taxon",y="Proportion",fill="Status")
+tots=toplot%>%dplyr::select(taxon,tot)%>%distinct()%>%drop_na(tot)
+a=a+geom_text(tots,mapping=aes(x=taxon,y=1.05,label=tot),position="identity",inherit.aes = FALSE,size=7)
+a=a+scale_fill_grey(start = 1, end = 0,labels=c("Critically Imperiled","Imperiled","Vulnerable","Apparently Secure","Secure","Unknown"))
+a
+
+# #remove long tail of common name ngrams
+speciesdat$ngram_common[which(speciesdat$ngram_common>10)]=NA
+speciesdat$ngram_science[which(speciesdat$ngram_science>10)]=NA
+
+#remove ngrams with suspicious ratio
+speciesdat$ngram_common[which(abs(speciesdat$ngram_common/speciesdat$ngram_science)>10)]=NA
+
+if (!is.factor(speciesdat$taxon)) {
+  speciesdat$taxon <- as.factor(speciesdat$taxon)
+}
+
+#use mammals as the dropped category
+speciesdat$taxon=relevel(speciesdat$taxon,ref="Mammals")
+
+#for species where Natureserve ranking was determined after delisting or before listing set listing to 0
+speciesdat$listed[which(speciesdat$probs==1)]=0
+
+
+#first do two step model - first stage listing decision, second stage spending decision
+
+fit1=glm(listed~taxon+status+ngram_common+ngram_science+I(log(ngenus)),data=speciesdat[-which(speciesdat$ngram_common_flag==1),],family=binomial(link="logit"),x=TRUE)
+fit1_ses_family=cluster.bs.glm(fit1,speciesdat[-which(speciesdat$ngram_common_flag==1),],~family,boot.reps=250,output.replicates = TRUE)
+
+fit1_withevdist=glm(listed~taxon+status+ngram_common+ngram_science+I(log(ngenus))+I(log(evdist)),data=speciesdat[which(speciesdat$taxon%in%c("Reptiles","Mammals","Amphibians","Birds")&speciesdat$ngram_common_flag==0),],family=binomial(link="logit"))
+fit1_withevdist_ses_family=cluster.bs.glm(fit1_withevdist,speciesdat[which(speciesdat$taxon%in%c("Reptiles","Mammals","Amphibians","Birds")&speciesdat$ngram_common_flag==0),],~family,boot.reps=250,output.replicates = TRUE)
+
+save(fit1,fit1_ses_family,fit1_withevdist,fit1_withevdist_ses_family,file="Writing Up and Presentations/JAERE Submission/JAERE Resubmission/Second Revision/models.Rdat")
+
+#check whether effects of conservation status are different from each other, not just from conservation status 1
+statuslevels=c("status2","status3","status4","status5","statusExtinct","statusProb. Extinct","statusUNK")
+comp=array(dim=list(length(statuslevels),length(statuslevels),2))
+nboots=dim(fit1_ses_family$replicates)[1]
+for(i in 1:length(statuslevels)){
+  col1=which(colnames(fit1_ses_family$replicates)==statuslevels[i])
+  for(j in 1:length(statuslevels)){
+    if(i==j) next
+    col2=which(colnames(fit1_ses_family$replicates)==statuslevels[j])
+    comp[i,j,1]=mean(fit1_ses_family$replicates[,col1]-fit1_ses_family$replicates[,col2])
+    comp[i,j,2]=ifelse(comp[i,j,1]>0,sum((fit1_ses_family$replicates[,col1]-fit1_ses_family$replicates[,col2])<0)/nboots*100,sum((fit1_ses_family$replicates[,col1]-fit1_ses_family$replicates[,col2])>0)/nboots*100)
+  }
+}
+
+#convert values to probability of listing, with uncertainties for each taxon * conservation group
+taxconsmeans=speciesdat[-which(is.na(speciesdat$status)),]%>%
+  filter(ngram_common_flag==0)%>%
+  group_by(taxon,status)%>%
+  dplyr::summarize(ngram_common=quantile(ngram_common,probs=0.5,na.rm=T),ngram_science=quantile(ngram_science,probs=0.5,na.rm=T),ngenus=log(quantile(ngenus,probs=0.5,na.rm=T)))
+
+#use coefficients from fit1 to find conditional probabilites of listing for taxon-status groups with confidence intervals
+taxon=levels(speciesdat$taxon)
+status=levels(speciesdat$status)
+
+for(i in 1:length(taxon)){
+  for(j in 1:length(status)){
+    intercept=fit1$coefficients[1]+ifelse(i==1,0,fit1$coefficients[grep(taxon[i],names(fit1$coefficients))])+ifelse(j==1,0,ifelse(j==6,fit1$coefficients[grep("Extinct",names(fit1$coefficients))],fit1$coefficients[grep(status[j],names(fit1$coefficients))]))
+    taxmeanstemp=taxconsmeans[which(taxconsmeans$taxon==taxon[i]),]
+    taxmeanstemp=taxmeanstemp[ifelse(j==6,grep("Extinct",taxmeanstemp$status),grep(status[j],taxmeanstemp$status)),]
+    fit=intercept+as.numeric(taxmeanstemp[3:5])%*%fit1$coefficients[17:19]
+    fitprob=exp(fit)/(1+exp(fit))
+    if(i==1&j==1) taxconfit=fitprob
+    if(i>1|j>1) taxconfit=append(taxconfit,fitprob)
+  }
+}
+taxconfit=data.frame(taxon=rep(taxon,each=length(status)),status=rep(status,length(taxon)),fitprob=taxconfit)
+
+bounds=matrix(nrow=dim(taxconfit)[1],ncol=dim(fit1_ses_family$replicates)[1])
+#get confidence intervals for predicted probabilities using bootstrapped estimates
+for(k in 1:dim(fit1_ses_family$replicates)[1]){
+  for(i in 1:length(taxon)){
+    for(j in 1:length(status)){
+      intercept=fit1_ses_family$replicates[k,1]+ifelse(i==1,0,fit1_ses_family$replicates[k,grep(taxon[i],colnames(fit1_ses_family$replicates))])+ifelse(j==1,0,ifelse(j==6,fit1_ses_family$replicates[k,grep("Extinct",colnames(fit1_ses_family$replicates))],fit1_ses_family$replicates[k,grep(status[j],colnames(fit1_ses_family$replicates))]))
+      taxmeanstemp=taxconsmeans[which(taxconsmeans$taxon==taxon[i]),]
+      taxmeanstemp=taxmeanstemp[ifelse(j==6,grep("Extinct",taxmeanstemp$status),grep(status[j],taxmeanstemp$status)),]
+      fit=intercept+as.numeric(taxmeanstemp[3:5])%*%fit1$coefficients[17:19]
+      fitprob=exp(fit)/(1+exp(fit))
+      entry=which(taxconfit$taxon==taxon[i]&taxconfit$status==status[j])
+      bounds[entry,k]=fitprob
+    }
+  }
+}
+
+taxconfit=cbind(taxconfit,t(apply(bounds,MARGIN=1,function(x) quantile(x,probs=c(0.025,0.975),na.rm=T))))
+#turn into percent
+taxconfit[,3:5]=taxconfit[,3:5]*100
+
+colnames(taxconfit)=c("taxon","status","fitprob","pmin","pmax")
+
+a=ggplot(taxconfit[-which(taxconfit$status%in%c("Extinct","Prob. Extinct")|taxconfit$status=="2 "),],aes(x=status,y=fitprob,ymin=pmin,ymax=pmax,group=taxon,col=taxon,pch=taxon))+geom_point(size=4)+geom_errorbar(width=0.2)
+a=a+labs(x="Assessed Conservation Status",y="Predicted Probability of Listing",color=NULL,pch=NULL)+theme_bw(base_size=18)
+a=a+scale_shape_manual(values=c(0,1,2,7,8,15,16,4,17))
+x11()
+a
 # #identify some problem common name ngrams based on ratio with science ngrams
 # dat$CommonNameFlag[which(dat$ngram_common/dat$ngram_science>1000)]=1
 # 

@@ -9,8 +9,6 @@
 #### Workspace setup ####
 library(tidyverse)
 library(rstanarm)
-library(lme4)
-library(modelsummary)
 
 #### Read data ####
 analysis_species_data <- read_csv("data/analysis_data/cleaned_speciesdata.csv")
