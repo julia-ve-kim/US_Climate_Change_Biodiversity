@@ -1,19 +1,115 @@
 #### Preamble ####
-# Purpose: Simulates... [...UPDATE THIS...]
-# Author: Rohan Alexander [...UPDATE THIS...]
-# Date: 11 February 2023 [...UPDATE THIS...]
-# Contact: rohan.alexander@utoronto.ca [...UPDATE THIS...]
+# Purpose: Simulates datasets 
+# Author: Julia Kim 
+# Date: 22 March 2024 
+# Contact: juliaym.kim@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: [...UPDATE THIS...]
-# Any other information needed? [...UPDATE THIS...]
-
+# Pre-requisites: none
 
 #### Workspace setup ####
 library(tidyverse)
-# [...UPDATE THIS...]
 
 #### Simulate data ####
-# [...ADD CODE HERE...]
+set.seed(867) # for reproducibility 
 
+## SPECIES DATASET ##
+n <- 50 
+simulated_species_data <- 
+  tibble(
+    # use 1 through 50 to represent each species 
+    species_id = c(1:n),
+    # randomly assign taxon for each species_id 
+    taxon = sample(c("Birds", "Mammals", "Amphibians", "Reptiles"), size = n, replace = TRUE),
+    # randomly assign NatureServe assessment status 
+    status = sample(c(1, 2, 3, 4, 5, "UNK"), size = n, replace=TRUE),
+    # randomly assign scientific name ngram frequency 
+    ngram_science = rnorm(n = 50, mean = -0.1, sd = 1), 
+    # randomly assign common name ngram frequency
+    ngram_common = rnorm(n = 50, mean = -0.02, sd = 0.05), 
+    # randomly assign number of genus in species
+    ngenus = sample(1:10, size = n, replace = TRUE)
+  )
 
+# TESTS # 
+# Check there are 50 species in the dataset 
+nrow(simulated_species_data) == 50
 
+# Check that there are four taxons in the dataset 
+all(simulated_species_data$taxon %in% c("Birds", "Mammals", "Amphibians", "Reptiles")) 
+
+# Check that status is a value between 1 to 5 inclusive or "UNK" 
+all(simulated_species_data$status %in% c(1, 2, 3, 4, 5, "UNK"))
+
+# Check that the genus number is larger than 0 
+all(simulated_species_data$ngenus > 0)
+
+# Check each column type 
+simulated_species_data$taxon |> class() == "character"
+simulated_species_data$status |> class() == "character"
+simulated_species_data$ngram_science |> class() == "numeric"
+simulated_species_data$ngram_common|> class() == "numeric"
+simulated_species_data$ngenus |> class() == "integer"
+
+## SPENDING DATASET ##
+simulated_spending_data <- 
+  tibble(
+    # use 1 through 50 to represent each species 
+    species_id = c(1:n),
+    # randomly assign taxon for each species_id 
+    taxon = sample(c("Birds", "Mammals", "Amphibians", "Reptiles"), size = n, replace = TRUE),
+    # randomly assign listing status 
+    status = sample(c("Endangered", "Threatened", "Extinct"), size = n, replace = TRUE),
+    # randomly assign spatial extent of species (number of USFWS regions in which species occurs) 
+    num_regions = sample(1:10, size = n, replace = TRUE), 
+    # randomly assign USFWS priority numbers capturing degree of threat, species taxonomic rarity and 
+    # recovery potential
+    priority_threat = sample(1:18, size = n, replace = TRUE), 
+    priority_potential = sample(1:18, size = n, replace = TRUE),
+    priority_rarity = sample(1:18, size = n, replace = TRUE),
+    # randomly assign indicator variable to note whether USFWS' assessment agrees
+    # conflicts with economic development 
+    conflict = sample(0:1, size = n, replace = TRUE), 
+    # randomly assign scientific name ngram frequency 
+    ngram_science = rnorm(n = 50, mean = -0.1, sd = 1), 
+    # randomly assign common name ngram frequency
+    ngram_common = rnorm(n = 50, mean = -0.02, sd = 0.05),
+    # randomly assign number of genus in species
+    ngenus = sample(1:10, size = n, replace = TRUE) 
+  )
+
+# TESTS # 
+# Check there are 50 species in the dataset 
+nrow(simulated_spending_data) == 50
+
+# Check that there are four taxons in the dataset 
+all(simulated_spending_data$taxon %in% c("Birds", "Mammals", "Amphibians", "Reptiles"))
+
+# Check that status is "Endangered", "Threatened", "Extinct"
+all(simulated_spending_data$status %in% c("Endangered", "Threatened", "Extinct")) 
+
+# Check num_regions, ngenus are values greater than 0
+all(simulated_spending_data$num_regions > 0) 
+all(simulated_spending_data$ngenus > 0)
+
+# Check priority variables are values between 1 and 18 inclusive 
+all(simulated_spending_data$priority_threat) |> min() = 1 
+all(simulated_spending_data$priority_threat) |> max() = 18 
+all(simulated_spending_data$priority_potential) |> min() = 1 
+all(simulated_spending_data$priority_potential) |> max() = 18 
+all(simulated_spending_data$priority_rarity) |> min() = 1
+all(simulated_spending_data$priority_rarity) |> max() = 18
+
+# Check conflict is a binary variable assuming 0 or 1 
+all(simulated_spending_data$conflict %in% c(0, 1))
+
+# Check each column type 
+simulated_spending_data$taxon |> class() == "character"
+simulated_spending_data$status |> class() == "character"
+simulated_spending_data$num_regions |> class() == "integer"
+simulated_spending_data$priority_threat |> class() == "integer"
+simulated_spending_data$priority_potential |> class() == "integer"
+simulated_spending_data$priority_rarity |> class() == "integer"
+simulated_spending_data$conflict |> class() == "integer"
+simulated_spending_data$ngram_science |> class() == "numeric"
+simulated_spending_data$ngram_common|> class() == "numeric"
+simulated_spending_data$ngenus |> class() == "integer"
