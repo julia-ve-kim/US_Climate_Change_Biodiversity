@@ -1,221 +1,108 @@
 ---
-title: "My title"
-subtitle: "My subtitle if needed"
-author: 
-  - First author
-  - Another author
-thanks: "Code and data are available at: LINK."
-date: today
+title: "Climate Change, Biodiversity Loss"
+subtitle: "A replication analysis"
+author: "Julia Kim"
+thanks: "Code and data are available at: [https://github.com/julia-ve-kim/US_Climate_Change_Biodiversity](https://github.com/julia-ve-kim/US_Climate_Change_Biodiversity); Minimal and Full Replication on Social Science Reproduction platform available at [https://doi.org/10.48152/ssrp-9vc2-gp37](https://doi.org/10.48152/ssrp-9vc2-gp37) and  [https://doi.org/10.48152/ssrp-qvfh-0r62](https://doi.org/10.48152/ssrp-qvfh-0r62), respectively."
+date: "April 2, 2024"
 date-format: long
-abstract: "First sentence. Second sentence. Third sentence. Fourth sentence."
-format: pdf
-number-sections: true
+format: 
+  pdf: 
+    include-in-header: 
+      text: |
+        \usepackage{lscape}
+        \newcommand{\blandscape}{\begin{landscape}}
+        \newcommand{\elandscape}{\end{landscape}}
+    documentclass: article
+    geometry: margin = 1.2in
+    abstract: "Abstract here."
+    number-sections: true
+output: 
+  bookdown::pdf_document2
+toc: true
+fig_caption: yes
+nocite: '@*'
 bibliography: references.bib
 ---
 
-```{r}
-#| include: false
-#| warning: false
-#| message: false
-
-library(tidyverse)
-library(palmerpenguins)
-```
-
-
 # Introduction
 
-You can and should cross-reference sections and sub-sections. We use @citeR and @rohan.
+# Data 
 
-The remainder of this paper is structured as follows. @sec-data....
+## Source 
+
+The paper and data used for replication are obtained from "Noah's Arc in a Warming World: Climate Change, Biodiversity Loss, and Public Adaptation Costs in the United States" [@Moore], published in the *Journal of the Association of Environmental and Resource Economists*. Their analysis sought, in part, to explore how the probability of a species being listed under the ESA was influenced by its conservation status, utility value to humans, and evolutionary distinctiveness. Our replication seeks to address the validity of these three findings and to discuss the projected increases in species listing due to climate change. 
+
+## Methodology 
+
+The original dataset is made publicly available by Moore et al. [-@Moore]. As part of our reproduction, we removed variables not of interest to our analysis and clarified the names of variables to make them easier to work with. A further discussion of the variables of interest that were retained in the final dataset, the source of their data, and the methodology employed to clean them, follow. 
+
+### Listing Status of Species 
+
+### Endangerment of Listed and Nonlisted Species 
+
+### Google Ngrams for Listed and Nonlisted Species
+
+An $n$-gram is defined as a sequence of $n$ words in some particular order: a 2-gram, for instance, is a two-word sequence like "*Balaena mysticetus*", whilst a 3-gram is three-word sequence like "*Lithobates areolatus circulosus*." An on-line search engine, the Google Books Ngram Viewer uses text processing to provide the frequency of such $n$-grams in a corpus of over 25 million digitised books published over the course of more than 500 years [@Google]. These books are published in eight languages; in particular, the English corpus of 2019 consists over over 16 million of such books published between 1470 and 2019 [@Michel].
+
+As argued by Moore et al. [-@Moore], the rich variety of ways in which a species may provide utility -- through cultural significance, commercial value, scientific interest, and so forth -- should likely directly influence the frequency with which the species is written about over time. As a result, they argue that it is reasonable to use common and scientific name $n$-grams as an additional estimate of the utility value of species to humans. We adopt their reasoning, and provide potential limitations of this argument in @sec-limitations.
+
+To determine the $n$-gram frequencies for species names, Moore et al. [-@Moore] performed case-insensitive searches in Google Books' English corpus of 2019 for all common and scientific names present in the NatureServe and ESA archives between 1800 and 2016. They assigned a frequency of 0 across all years whenever a name failed to return valid data. Here, the purpose of treating common and scientific name $n$-grams separately owes to the fact that common names pose a few challenges. In particular, a species may be designated colloquially by multiple common names or may lack a common name altogether [@Cheese]. Conversely, a single common name may be used for multiple different species (e.g., a "millipede" referring to any of the 10,000 species in the anthropod class Diplopoda) or may have additional, unrelated meanings or uses (e.g., "British soldier" referring to an army serviceman of the United Kingdom or to the lichen *Cladonia cristatella*) [@Cheese]. To account for such complicating factors, common and scientific names were thus treated separately. Moreover, any species whose common name $n$-grams had a frequency $>10$ times its corresponding scientific $n$-gram frequency were discarded in the dataset [@Moore].  
+
+Lastly, as described by Moore et al. [-@Moore], $n$-gram frequencies were aggregated to the species level. More specifically, for unlisted species, the $n$-gram frequency was taken to be the average from 1950 to 2016. For listed species, it was calculated as the average frequency from 1950 to 10 years *prior* to the date of the listing decision. This was done to minimise the bias to the $n$-gram value following any publicity generated by the listing decision [@Moore]. 
+
+
+### Evolutionary Distinctiveness 
 
 
 
-# Data {#sec-data}
-
-Some of our data is of penguins (@fig-bills), from @palmerpenguins.
-
-```{r}
-#| label: fig-bills
-#| fig-cap: Bills of penguins
-#| echo: false
-
-ggplot(penguins, aes(x = island, fill = species)) +
-  geom_bar(alpha = 0.8) +
-  scale_fill_manual(values = c("darkorange","purple","cyan4"),
-                    guide = "none") +
-  theme_minimal() +
-  facet_wrap(~species, ncol = 1) +
-  coord_flip()
-```
-
-Talk more about it.
-
-And also planes (@fig-planes). (You can change the height and width, but don't worry about doing that until you have finished every other aspect of the paper - Quarto will try to make it look nice and the defaults usually work well once you have enough text.)
-
-```{r}
-#| label: fig-planes
-#| fig-cap: Relationship between wing length and width
-#| echo: false
-#| warning: false
-#| message: false
-
-analysis_data <- read_csv(here::here("data/analysis_data/analysis_data.csv"))
-
-analysis_data |> 
-  ggplot(aes(x = width, y = length)) +
-  geom_point(alpha = 0.8) +
-  theme_minimal() +
-  labs(x = "Wing width (mm)",
-       y = "Wing length (mm)")
-```
-
-Talk way more about it. 
 
 
 
 # Model
 
-The goal of our modelling strategy is twofold. Firstly,...
-
-Here we briefly describe the Bayesian analysis model used to investigate... Background details and diagnostics are included in [Appendix -@sec-model-details].
 
 ## Model set-up
-
-Define $y_i$ as the number of seconds that the plane remained aloft. Then $\beta_i$ is the wing width and $\gamma_i$ is the wing length, both measured in millimeters.  
-
-\begin{align} 
-y_i|\mu_i, \sigma &\sim \mbox{Normal}(\mu_i, \sigma) \\
-\mu_i &= \alpha + \beta_i + \gamma_i\\
-\alpha &\sim \mbox{Normal}(0, 2.5) \\
-\beta &\sim \mbox{Normal}(0, 2.5) \\
-\gamma &\sim \mbox{Normal}(0, 2.5) \\
-\sigma &\sim \mbox{Exponential}(1)
-\end{align}
-
-We run the model in R [@citeR] using the `rstanarm` package of @rstanarm. We use the default priors from `rstanarm`.
 
 
 ### Model justification
 
-We expect a positive relationship between the size of the wings and time spent aloft. In particular...
-
-We can use maths by including latex between dollar signs, for instance $\theta$.
-
-
 # Results
-
-Our results are summarized in @tbl-modelresults.
-
-```{r}
-#| echo: false
-#| eval: true
-#| warning: false
-#| message: false
-
-library(rstanarm)
-
-first_model <-
-  readRDS(file = here::here("models/first_model.rds"))
-```
-
-```{r}
-#| echo: false
-#| eval: true
-#| label: tbl-modelresults
-#| tbl-cap: "Explanatory models of flight time based on wing width and wing length"
-#| warning: false
-
-modelsummary::modelsummary(
-  list(
-    "First model" = first_model
-  ),
-  statistic = "mad",
-  fmt = 2
-)
-```
-
-
 
 
 # Discussion
 
-## First discussion point {#sec-first-point}
+## Findings 
+Our paper has successfully replicated three of their major findings: 
 
-If my paper were 10 pages, then should be be at least 2.5 pages. The discussion is a chance to show off what you know and what you learnt from all this. 
+(1) The probability of listing changes with conservation status, decreasing monotonically from the most to the least endangered. 
 
-## Second discussion point
+(2) There is some evidence that the probability of listing of a species is associated with its utility value to humans. In particular, imperiled vertebrates -- including reptiles, fish, birds, amphibians, and mammals -- are much more likely to be listed than plants and invertebrates. However, listing probability appears to be significantly affected by neither scientific nor common name $n$-grams. 
 
-## Third discussion point
+(3) There is conflicting evidence as to whether the probability of listing is related to the distinctiveness of a species. Whilst species in smaller genera are more likely to be listed, there is no evidence that the species' phylogenetic diversity plays a role in the listing decision. 
 
-## Weaknesses and next steps
+## Case study 
 
-Weaknesses and next steps should also be included.
+## Ethical Implications 
 
-\newpage
+## Accounting for Bias
 
-\appendix
+## Limitations {#sec-limitations}
 
-# Appendix {-}
+Although the ESA mandates the listing all species at risk of extinction, capacity and budgetary constraints often slow down the the listing process, leading to a backlog of species awaiting assessment [@Alexander]. In some cases, USFWS will designate a species as "warranted but precluded" to acknowledge that listing the species is necessary but of lesser priority than other species in need of greater protection [@Alexander]. 
 
+A limitation of the $n$-gram measure is that it captures only English-language media and includes only material published in books, excluding popular media such as amagazines, websites or newspapers. 
+
+Limitations to using ngram as a proxy for species value 
+
+
+
+## Future Research 
+
+# Appendix
 
 # Additional data details
 
-# Model details {#sec-model-details}
-
-## Posterior predictive check
-
-In @fig-ppcheckandposteriorvsprior-1 we implement a posterior predictive check. This shows...
-
-In @fig-ppcheckandposteriorvsprior-2 we compare the posterior with the prior. This shows... 
-
-```{r}
-#| eval: true
-#| echo: false
-#| message: false
-#| warning: false
-#| label: fig-ppcheckandposteriorvsprior
-#| layout-ncol: 2
-#| fig-cap: "Examining how the model fits, and is affected by, the data"
-#| fig-subcap: ["Posterior prediction check", "Comparing the posterior with the prior"]
-
-pp_check(first_model) +
-  theme_classic() +
-  theme(legend.position = "bottom")
-
-posterior_vs_prior(first_model) +
-  theme_minimal() +
-  scale_color_brewer(palette = "Set1") +
-  theme(legend.position = "bottom") +
-  coord_flip()
-```
-
-## Diagnostics
-
-@fig-stanareyouokay-1 is a trace plot. It shows... This suggests...
-
-@fig-stanareyouokay-2 is a Rhat plot. It shows... This suggests...
-
-```{r}
-#| echo: false
-#| eval: true
-#| message: false
-#| warning: false
-#| label: fig-stanareyouokay
-#| fig-cap: "Checking the convergence of the MCMC algorithm"
-#| fig-subcap: ["Trace plot", "Rhat plot"]
-#| layout-ncol: 2
-
-plot(first_model, "trace")
-
-plot(first_model, "rhat")
-```
-
-
-
-\newpage
 
 
 # References
-
 
