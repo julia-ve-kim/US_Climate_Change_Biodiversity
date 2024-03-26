@@ -1,0 +1,434 @@
+LLM: ChatGPT-3.5
+Date: 21 March 2024 
+
+User
+speciesdat=read.csv("speciesdata.csv")
+Error in file(file, "rt") : cannot open the connection
+In addition: Warning message:
+In file(file, "rt") :
+  cannot open file 'speciesdata.csv': No such file or directory
+  
+ChatGPT
+The error message indicates that R cannot find the file 'speciesdata.csv' in the current working directory. Here are a few things to check and try:
+
+Verify File Existence: Double-check that the file 'speciesdata.csv' exists in the directory from which you're running your R script. If it's not there, you'll need to move it to the correct directory or specify the correct path to the file.
+
+Set Working Directory: Make sure you've set the correct working directory in your R script. If your file is not in the same directory as your R script, you'll need to either move the file to the directory where your R script is located or change the working directory in your script using setwd() function.
+
+By addressing these points, you should be able to resolve the issue and successfully read the 'speciesdata.csv' file in R.
+
+
+Date: March 23 2024
+
+User 
+Check priority numbers are NA or between 1 and 18 
+cleaned_spending_data$priority_threat |> min() == 1 
+cleaned_spending_data$priority_threat |> max() == 18 
+cleaned_spending_data$priority_potential |> min() == 1 
+cleaned_spending_data$priority_potential |> max() == 18 
+cleaned_spending_data$priority_rarity |> min() == 1
+cleaned_spending_data$priority_rarity |> max() == 18 right now i just check 1 to 18 but how to factor in the fact that priority_... can be NA
+
+ChatGPT
+To factor in the possibility that the priority columns (priority_threat, priority_potential, priority_rarity) might contain NA values, you can use the is.na() function in combination with your existing checks. Here's how you can modify your checks:
+
+r
+Copy code
+# Check if priority_threat is within range or NA
+priority_threat_valid <- all(ifelse(is.na(cleaned_spending_data$priority_threat), TRUE, cleaned_spending_data$priority_threat %in% 1:18))
+
+# Check if priority_potential is within range or NA
+priority_potential_valid <- all(ifelse(is.na(cleaned_spending_data$priority_potential), TRUE, cleaned_spending_data$priority_potential %in% 1:18))
+
+# Check if priority_rarity is within range or NA
+priority_rarity_valid <- all(ifelse(is.na(cleaned_spending_data$priority_rarity), TRUE, cleaned_spending_data$priority_rarity %in% 1:18))
+
+# Combine all checks
+all_valid <- priority_threat_valid && priority_potential_valid && priority_rarity_valid
+
+# Display the result
+if (all_valid) {
+  print("All priority columns are valid.")
+} else {
+  print("Some priority columns are not valid.")
+}
+This code will check if each priority column is either NA or within the range of 1 to 18. If any of the columns contain values outside this range or are NA when they shouldn't be, it will print that some priority columns are not valid. Otherwise, it will print that all priority columns are valid.
+
+User
+min(simulated_spending_data$priority_threat) = 1 
+Error in min(simulated_spending_data$priority_threat) = 1 : 
+  could not find function "min<-" is there a package i need
+  
+ChatGPT
+It seems like you're trying to assign a value of 1 to the minimum value in the priority_threat column of your simulated_spending_data dataset. However, the error message indicates that R is interpreting this operation as trying to use a function min<-, which doesn't exist.
+
+To set the minimum value in a column to 1, you can do it in a couple of ways, using base R or with additional packages like dplyr. Here's how you can do it with base R:
+
+R
+Copy code
+# Find the minimum value in the column
+min_value <- min(simulated_spending_data$priority_threat)
+
+# Replace the minimum value with 1
+simulated_spending_data$priority_threat[simulated_spending_data$priority_threat == min_value] <- 1
+If you prefer to use dplyr, you can do it like this:
+
+R
+Copy code
+library(dplyr)
+
+simulated_spending_data <- simulated_spending_data %>%
+  mutate(priority_threat = ifelse(priority_threat == min(priority_threat), 1, priority_threat))
+Make sure you have the dplyr package installed and loaded in your R environment if you choose to use the second method.
+
+Date: 25 March 2024
+I have the following model: species_spending_model <- lm(I(log(spending) ~ taxon + status_species + priority_threat + 
+                                 priority_rarity + priority_potential + conflict + 
+                                 ngrams_common + ngrams_science + region_num + I(log(ngenus))), 
+                             data = cleaned_spending_data) . I have the following dataset  Groups:   taxon [7]
+   taxon      status_species ngram_common ngram_science ngenus priority_threat priority_rarity priority_potential region_num
+   <chr>      <chr>                 <dbl>         <dbl>  <dbl>           <dbl>           <dbl>              <dbl>      <dbl>
+ 1 Amphibians 1                   -0.110        -0.113    3.50               3               2                  2        1  
+ 2 Amphibians 2                   -0.101        -0.0628   3.50               3               2                  2        1  
+ 3 Amphibians 3                   -0.118        -0.164    3.93               3               2                  1       NA  
+ 4 Birds      1                   -0.100        -0.119    1.95               3               2                  2        1  
+ 5 Birds      2                   -0.123        -0.164    2.64               3               1                  2        1  
+ 6 Birds      3                    0.491        -0.0581   3.09               3               1                  2        2  
+ 7 Birds      4                    1.01         -0.0261   1.95               2               1                  2        2.5
+ 8 Birds      5                   12.0           6.57     2.08               2               2                  2        4   (continues on. there is also a conflict variable, not shown here). How do I use my model to make predictions of the spending (log)? 
+
+ChatGPT
+To use your linear regression model (species_spending_model) to make predictions of spending (log), you can use the predict() function in R. Here's how you can do it:
+
+R
+Copy code
+# Assuming your dataset is named cleaned_spending_data
+# Assuming your linear regression model is named species_spending_model
+
+# Make sure to replace 'new_data' with your actual new data for prediction
+new_data <- cleaned_spending_data
+
+# Predict spending (log) using the model
+predictions <- predict(species_spending_model, newdata = new_data)
+
+# Display the predictions
+print(predictions)
+This will give you the predicted spending (log) values based on your model and the new data provided. Make sure that the new_data you provide has the same structure and variables as the dataset used to train the model (cleaned_spending_data).
+
+User
+put the spending predictions as a new column inside the taxconsmeans tibble: taxconsmeans <- cleaned_spending_data |> 
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) |> 
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) |> 
+  # group by taxon and status
+  group_by(taxon, status_species) |> 
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)
+  ) 
+
+# generate predictions 
+predictions <- predict(species_spending_model, newdata = taxconsmeans)
+ChatGPT
+To add the spending predictions as a new column inside the taxconsmeans tibble, you can simply use the mutate() function. Here's how you can do it:
+
+R
+Copy code
+# Assuming your linear regression model is named species_spending_model
+
+# Generate predictions for spending (log) using the model and taxconsmeans data
+taxconsmeans <- taxconsmeans %>%
+  mutate(spending_prediction = predict(species_spending_model, newdata = .))
+
+# Display the updated tibble
+print(taxconsmeans)
+This will add a new column named spending_prediction to your taxconsmeans tibble containing the predicted spending (log) values based on your model.
+
+User
+can you just take my code & append the data
+ChatGPT
+Certainly! Here's your provided code with the data appending included:
+
+R
+Copy code
+taxconsmeans <- cleaned_spending_data |> 
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) |> 
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) |> 
+  # group by taxon and status
+  group_by(taxon, status_species) |> 
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)
+  ) 
+
+# generate predictions 
+taxconsmeans <- taxconsmeans %>%
+  mutate(spending_prediction = predict(species_spending_model, newdata = .))
+
+# Display the updated tibble
+print(taxconsmeans)
+This code will first process your cleaned_spending_data as per your specifications, then append a column named spending_prediction with the predicted spending values based on your linear regression model.
+
+User
+no use predictions <- predict(species_spending_model, newdata = taxconsmeans). apend this
+ChatGPT
+Apologies for the misunderstanding. Here's the corrected version with the predictions appended:
+
+R
+Copy code
+# Assuming your linear regression model is named species_spending_model
+
+taxconsmeans <- cleaned_spending_data |> 
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) |> 
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) |> 
+  # group by taxon and status
+  group_by(taxon, status_species) |> 
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)
+  ) 
+
+# Generate predictions and append them
+taxconsmeans$spending_prediction <- predict(species_spending_model, newdata = taxconsmeans)
+
+# Display the updated tibble
+print(taxconsmeans)
+This code calculates the predictions using the predict() function and appends them as a new column named spending_prediction to the taxconsmeans tibble.
+
+User
+now a#### Preamble ####
+# Purpose: Explore and understand the spending model generated in 04-model.R by 
+# creating data visualisations. Note visualisations of the species model are 
+# contained in 99-replications.R.  
+# Author: Julia Kim 
+# Date: 24 March 2024 
+# Contact: juliaym.kim@mail.utoronto.ca 
+# License: MIT
+# Pre-requisites: Run the 04-model.R script to produce the models. 
+
+#### Workspace setup ####
+library(tidyverse)
+library(readr)
+library(ggplot2)
+
+#### Read data and model ####
+cleaned_spending_data <- read_csv("data/analysis_data/cleaned_spendingdata.csv")
+spending_model <- readRDS("models/species_listing_model.rds")
+
+taxconsmeans <- cleaned_spending_data |> 
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) |> 
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) |> 
+  # group by taxon and status
+  group_by(taxon, status_species) 
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)) 
+
+# generate predictions 
+taxconsmeans$log_spending_prediction <- predict(species_spending_model, newdata = taxconsmeans)
+
+# plot data of predicted log(spending) against assessed conservation status, 
+# with points shaped according to taxon 
+taxconsmeans |> 
+  ggplot(aes(x = status_species, y = log_spending_prediction, group = taxon, col = taxon, pch = taxon)) + 
+  geom_point(size = 3, stroke = 0.75) + 
+  labs(x = "Assessed Conservation Status", y = "Predicted Log(Spending)", fill = "Taxon") + 
+  theme_minimal() +
+  scale_shape_manual(values = shape_values)  # manually specify shape values
+
+
+rename taxon varialbe as Taxon after predictions
+ChatGPT
+To rename the taxon variable to Taxon after generating predictions, you can use the rename() function from the dplyr package. Here's how you can integrate it into your script:
+
+R
+Copy code
+# Rename the 'taxon' variable to 'Taxon' after generating predictions
+taxconsmeans <- taxconsmeans %>%
+  rename(Taxon = taxon)
+
+# Plot data of predicted log(spending) against assessed conservation status,
+# with points shaped according to Taxon
+taxconsmeans %>%
+  ggplot(aes(x = status_species, y = log_spending_prediction, group = Taxon, col = Taxon, pch = Taxon)) + 
+  geom_point(size = 3, stroke = 0.75) + 
+  labs(x = "Assessed Conservation Status", y = "Predicted Log(Spending)", fill = "Taxon") + 
+  theme_minimal() +
+  scale_shape_manual(values = shape_values)  # manually specify shape values
+This will ensure that the taxon variable is renamed to Taxon in your taxconsmeans tibble after generating predictions.
+
+User
+spending_model <- readRDS("models/species_listing_model.rds")
+> 
+> taxconsmeans <- cleaned_spending_data |> 
++     # remove rows where status_species is NA
++     filter(!is.na(status_species)) |> 
++     # filter rows where CommonNameFlag is 0
++     filter(CommonNameFlag == 0) |> 
++     # group by taxon and status
++     group_by(taxon, status_species) 
+> # calculate median values and uncertainties for each variable
+> summarize(
++     ngrams_common = median(ngrams_common, na.rm = TRUE),
++     ngrams_science = median(ngrams_science, na.rm = TRUE),
++     ngenus = log(median(ngenus, na.rm = TRUE)), 
++     priority_threat = median(priority_threat, na.rm = TRUE),
++     priority_rarity = median(priority_rarity, na.rm = TRUE),
++     priority_potential = median(priority_potential, na.rm = TRUE),
++     region_num = median(region_num, na.rm = TRUE), 
++     conflict = median(conflict, na.rm = TRUE)) 
+Error: object 'ngrams_common' not found???? it worked a minute ago
+ChatGPT
+The error message indicates that R can't find the ngrams_common variable in your data. This suggests that there might be a typo or some other issue with the column name.
+
+Please double-check the column names in your cleaned_spending_data dataset to ensure they match the names you're using in your analysis code. Make sure there are no typos or missing variables.
+
+If the column names are correct, ensure that your data frame cleaned_spending_data is loaded properly and contains the expected columns. You can inspect the structure of your data frame using str(cleaned_spending_data) or head(cleaned_spending_data) to see the first few rows.
+
+Once you've confirmed the column names and the presence of the necessary variables in your data frame, you should be able to proceed with your analysis without encountering the error.
+
+User
+head(cleaned_spending_data)
+# A tibble: 6 × 14
+  name            taxon status_species spending region_num priority priority_threat priority_potential
+  <chr>           <chr> <chr>             <dbl>      <dbl>    <dbl>           <dbl>              <dbl>
+1 Oncorhynchus c… Fish… 2               234075.          1       15               1                  2
+2 Balaena mystic… Mamm… 2               846910.         NA        9               2                  2
+3 Gambusia georg… Fish… Extinct           6785.          1        2               3                  2
+4 Plestiodon rey… Rept… 2                13739.          1        7               2                  2
+5 Lepidochelys k… Rept… 1              3342350.          3        2               3                  2
+6 Chasmistes lio… Fish… 2               780249.          1        5               3                  1
+# ℹ 6 more variables: priority_rarity <dbl>, conflict <dbl>, ngenus <dbl>, CommonNameFlag <dbl>,
+#   ngrams_science <dbl>, ngrams_common <dbl>
+ChatGPT
+Thank you for providing the output of head(cleaned_spending_data). It seems that the column names are indeed present, including ngrams_common.
+
+Given that the column names are correct and present in your dataset, the issue might be occurring within the piping operation.
+
+Let's try rewriting the piping operation to see if it resolves the error:
+
+R
+Copy code
+taxconsmeans <- cleaned_spending_data %>%
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) %>%
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) %>%
+  # group by taxon and status
+  group_by(taxon, status_species) %>%
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)
+  )
+Try running this code and see if it resolves the issue. If the problem persists, there might be another issue at play, and we can further investigate from there.
+
+User
+okay, now i want to work again with my model. i want to visualise predictions based on four priority numbers: priority_threat (1 to 3 or NA), priority_potential (1 to 2 or NA), priority_threat (1  2  3 NA) and conflict (0 to 1)
+ChatGPT
+To visualize predictions based on the four priority numbers (priority_threat, priority_potential, priority_rarity, and conflict), you can create multiple plots, each focusing on one of these variables. Here's how you can do it:
+
+R
+Copy code
+# Load necessary libraries if not already loaded
+library(ggplot2)
+
+# Visualize predictions based on priority_threat
+ggplot(taxconsmeans, aes(x = priority_threat, y = log_spending_prediction)) +
+  geom_boxplot() +
+  labs(x = "Priority Threat", y = "Predicted Log(Spending)")
+
+# Visualize predictions based on priority_potential
+ggplot(taxconsmeans, aes(x = priority_potential, y = log_spending_prediction)) +
+  geom_boxplot() +
+  labs(x = "Priority Potential", y = "Predicted Log(Spending)")
+
+# Visualize predictions based on priority_rarity
+ggplot(taxconsmeans, aes(x = priority_rarity, y = log_spending_prediction)) +
+  geom_boxplot() +
+  labs(x = "Priority Rarity", y = "Predicted Log(Spending)")
+
+# Visualize predictions based on conflict
+ggplot(taxconsmeans, aes(x = conflict, y = log_spending_prediction)) +
+  geom_boxplot() +
+  labs(x = "Conflict", y = "Predicted Log(Spending)")
+This code will create four separate plots, each visualizing the predicted log spending against one of the priority variables (priority_threat, priority_potential, priority_rarity, and conflict) using boxplots. You can customize these plots further according to your preferences.
+
+User
+# according to taxon ### 
+taxconsmeans <- cleaned_spending_data %>%
+  # remove rows where status_species is NA
+  filter(!is.na(status_species)) %>%
+  # filter rows where CommonNameFlag is 0
+  filter(CommonNameFlag == 0) %>%
+  # group by taxon and status
+  group_by(taxon, status_species) %>%
+  # calculate median values and uncertainties for each variable
+  summarize(
+    ngrams_common = median(ngrams_common, na.rm = TRUE),
+    ngrams_science = median(ngrams_science, na.rm = TRUE),
+    ngenus = log(median(ngenus, na.rm = TRUE)), 
+    priority_threat = median(priority_threat, na.rm = TRUE),
+    priority_rarity = median(priority_rarity, na.rm = TRUE),
+    priority_potential = median(priority_potential, na.rm = TRUE),
+    region_num = median(region_num, na.rm = TRUE), 
+    conflict = median(conflict, na.rm = TRUE)
+  )
+
+# generate predictions 
+taxconsmeans$log_spending_prediction <- predict(species_spending_model, newdata = taxconsmeans) what is the pros of running the predictions over taxconsmeans in lieu of the original dataset?
+ChatGPT
+Running predictions over the summarized dataset taxconsmeans rather than the original dataset cleaned_spending_data can have several advantages:
+
+Reduced Complexity: The summarized dataset contains aggregated information, such as median values, for each combination of taxon and status_species. This reduces the complexity of the data, making it easier to analyze and interpret.
+
+Improved Visualization: When visualizing predictions based on taxon, having aggregated data can lead to clearer and more interpretable plots. Instead of visualizing predictions for each individual data point, you're visualizing trends and patterns across groups, which can be more insightful.
+
+Improved Model Performance: In some cases, using summarized data for prediction can lead to improved model performance. Aggregating data can help reduce noise and variability, which may result in more stable and accurate predictions.
+
+Efficiency: By summarizing the data first, you're reducing the number of data points that the model needs to process during prediction. This can lead to faster computation times, especially for large datasets.
+
+Avoidance of Overfitting: By summarizing the data, you're potentially reducing the risk of overfitting, especially if the original dataset contains a large number of observations. Overfitting occurs when a model learns to capture noise in the training data, leading to poor generalization to new data.
+
+Overall, using summarized data for prediction, as in the case of taxconsmeans, can offer a more focused and efficient approach to analyzing and visualizing model predictions, particularly when exploring trends and patterns across groups.

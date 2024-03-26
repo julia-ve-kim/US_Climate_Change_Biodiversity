@@ -1,0 +1,162 @@
+---
+title: "Climate Change, Biodiversity Loss"
+subtitle: "A replication analysis"
+author: "Julia Kim"
+thanks: "Code and data are available at: [https://github.com/julia-ve-kim/US_Climate_Change_Biodiversity](https://github.com/julia-ve-kim/US_Climate_Change_Biodiversity); Minimal and Full Replication on Social Science Reproduction platform available at [https://doi.org/10.48152/ssrp-9vc2-gp37](https://doi.org/10.48152/ssrp-9vc2-gp37) and  [https://doi.org/10.48152/ssrp-qvfh-0r62](https://doi.org/10.48152/ssrp-qvfh-0r62), respectively."
+date: "April 2, 2024"
+date-format: long
+format: 
+  pdf: 
+    include-in-header: 
+      text: |
+        \usepackage{lscape}
+        \newcommand{\blandscape}{\begin{landscape}}
+        \newcommand{\elandscape}{\end{landscape}}
+    documentclass: article
+    geometry: margin = 1.2in
+    abstract: "Abstract here."
+    number-sections: true
+output: 
+  bookdown::pdf_document2
+toc: true
+fig_caption: yes
+nocite: '@*'
+bibliography: references.bib
+---
+
+```{r setup}
+#| echo: false
+#| message: false
+#| warning: false 
+library(here) 
+library(tidyverse)
+library(knitr)
+library(ggplot2) 
+
+# Read data
+cleaned_species_data <- read_csv(here("data/analysis_data/cleaned_speciesdata.csv"))
+```
+
+# Introduction
+
+
+# Data 
+
+## Source 
+
+The paper and data used for replication are obtained from "Noah's Arc in a Warming World: Climate Change, Biodiversity Loss, and Public Adaptation Costs in the United States" [@Moore], published in the *Journal of the Association of Environmental and Resource Economists*. Their analysis sought, in part, to explore how the probability of a species being listed under the ESA was influenced by its conservation status, utility value to humans, and evolutionary distinctiveness. Our replication seeks to address the validity of these three findings and to discuss the projected increases in species listing due to climate change. 
+
+## Methodology 
+
+The original dataset is made publicly available by Moore et al. [-@Moore]. As part of our reproduction, we removed variables not of interest to our analysis and clarified the names of variables to make them easier to work with. A further discussion as to the variables of interest, their source of data, and the methodology employed to clean them for analysis follow. 
+
+### Listing Status of Species 
+
+### Endangerment of Listed and Nonlisted Species 
+
+### Google Ngrams for Listed and Nonlisted Species
+
+An $n$-gram is defined as a sequence of $n$ words in some particular order: a 2-gram, for instance, is a two-word sequence like "*Balaena mysticetus*", whilst a 3-gram is three-word sequence like "*Lithobates areolatus circulosus*." An on-line search engine, the Google Books Ngram Viewer uses text processing to provide the frequency of such $n$-grams in a corpus of over 25 million digitised books published over the course of more than 500 years [@Google]. These books are published in eight languages; in particular, the English corpus of 2019 consists over over 16 million of such books published between 1470 and 2019 [@Michel].
+
+As argued by Moore et al. [-@Moore], the rich variety of ways in which a species may provide utility -- through cultural significance, commercial value, scientific interest, and so forth -- should likely directly influence the frequency with which the species is written about over time. As a result, they argue that it is reasonable to use common and scientific name $n$-grams as an additional estimate of the utility value of species to humans. We adopt their reasoning, and provide potential limitations of this argument in @sec-limitations.
+
+To determine the $n$-gram frequencies for species names, Moore et al. [-@Moore] performed case-insensitive searches in Google Books' English corpus of 2019 for all common and scientific names present in the NatureServe and ESA archives between 1800 and 2016. They assigned a frequency of 0 across all years whenever a name failed to return valid data. Here, the purpose of treating common and scientific name $n$-grams separately owes to the fact that common names pose a few challenges. In particular, a species may be designated colloquially by multiple common names or may lack a common name altogether [@Cheese]. Conversely, a single common name may be used for multiple different species (e.g., a "millipede" referring to any of the 10,000 species in the anthropod class Diplopoda) or may have additional, unrelated meanings or uses (e.g., "British soldier" referring to an army serviceman of the United Kingdom or to the lichen *Cladonia cristatella*) [@Cheese]. To account for such complicating factors, common and scientific names were thus treated separately.
+
+As described by Moore et al. [-@Moore], $n$-gram frequencies were then aggregated to the species level. More specifically, for unlisted species, common and scientific $n$-gram frequencies were taken to be their respective averages from 1950 to 2016. For listed species, they were calculated as their respective average frequencies from 1950 to 10 years *prior* to the date of the listing decision. This was done to minimise the bias to the $n$-gram values following any publicity generated by the listing decision [@Moore]. Owing to how small the raw $n$-gram frequencies were, all frequencies were then $z$-score normalised: this was accomplished by calculating the difference between each raw frequency and the corresponding $n$-gram mean and dividing the whole by the corresponding $n$-gram standard deviation. At last, to further account for the challenges posed by common names, as discussed previously, any species whose standardised common name $n$-gram had a frequency $>10$ times its corresponding standardised scientific $n$-gram frequency were discarded in the dataset [@Moore].  
+
+A plot of the mean standardised common and scientific $n$-gram frequencies per taxon is shown in @fig-ngram_distribution. 
+
+
+### Evolutionary Distinctiveness 
+
+
+
+
+
+
+# Model
+
+
+## Model set-up
+
+
+### Model justification
+
+# Results
+```{r}
+#| label: fig-ngram_distribution
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: "Distribution of the mean standardised common and scientific $n$-gram frequencies per taxon."
+#| fig-pos: H
+
+# group by taxon and calculate mean ngram_common and ngram_science
+taxon_means <- cleaned_species_data |> 
+  group_by(taxon)|>
+  summarise(mean_ngram_common = mean(ngram_common, na.rm = TRUE), 
+            mean_ngram_science = mean(ngram_science, na.rm = TRUE))
+
+# reshape the data for plotting
+taxon_means_long <- pivot_longer(taxon_means, 
+                                 cols = c(mean_ngram_science, mean_ngram_common),
+                                 names_to = "variable", 
+                                 values_to = "mean_value")
+
+# plot the means with legend in upper right corner
+ggplot(taxon_means_long, aes(x = taxon, y = mean_value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(x = "Taxon",
+       y = expression(paste("Mean standardised ", italic("n"), "-gram frequency")),
+       fill = NULL) +
+  scale_fill_manual(values = c("skyblue", "lightgreen"), 
+                    labels = c(expression(paste(italic("n"), "-gram common")),
+                               expression(paste(italic("n"), "-gram science")))) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = c(0.85, 0.84), # adjust legend position 
+        legend.text.align = 0, # align legend labels to the left
+        legend.margin = margin(1.5, 1.5, 1.5, 1.5),
+        legend.background = element_rect(fill = alpha("white", 0.7)), # adjust transparency 
+        legend.text = element_text(size = 7.5),
+        legend.key.size = unit(0.5, "cm"))  # reduce size of legend squares to 0.5 cm 
+```
+
+
+
+# Discussion
+
+## Findings 
+Our paper has successfully replicated three of their major findings: 
+
+(1) The probability of listing changes with conservation status, decreasing monotonically from the most to the least endangered. 
+
+(2) There is some evidence that the probability of listing of a species is associated with its utility value to humans. In particular, imperiled vertebrates -- including reptiles, fish, birds, amphibians, and mammals -- are much more likely to be listed than plants and invertebrates. However, listing probability appears to be significantly affected by neither scientific nor common name $n$-grams. 
+
+(3) There is conflicting evidence as to whether the probability of listing is related to the distinctiveness of a species. Whilst species in smaller genera are more likely to be listed, there is no evidence that the species' phylogenetic diversity plays a role in the listing decision. 
+
+## Case study 
+
+## Ethical Implications 
+
+## Accounting for Bias
+
+## Limitations {#sec-limitations}
+
+Although the ESA mandates the listing all species at risk of extinction, capacity and budgetary constraints often slow down the the listing process, leading to a backlog of species awaiting assessment [@Alexander]. In some cases, USFWS will designate a species as "warranted but precluded" to acknowledge that listing the species is necessary but of lesser priority than other species in need of greater protection [@Alexander]. 
+
+A limitation of the $n$-gram measure is that it captures only English-language media and includes only material published in books, excluding popular media such as amagazines, websites or newspapers. 
+
+Limitations to using ngram as a proxy for species value 
+
+
+
+## Future Research 
+
+# Appendix
+
+# Additional data details
+
+
+
+# References
+
