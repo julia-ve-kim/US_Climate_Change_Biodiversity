@@ -97,8 +97,7 @@ A breakdown of the conservation status by taxon is shown in @fig-constat, which 
 #| message: false
 #| fig-cap: "Distribution of assessed conservation status using NatureServe ranking system. Number above the bars gives the total number of species per taxon."
 #| fig-pos: H
-species_data <- read.csv(here::here("data/raw_data/speciesdata.csv"))
-cleaned_species_data1 <- species_data |>
+new_cleaned_species_data <- cleaned_species_data |>
   filter(status %in% c(1, 2, 3, 4, 5, "UNK")) |>
   # relabel status numbers
   mutate(status = case_when(   
@@ -131,7 +130,7 @@ status_colours <- c(
 )
 
 # plot data 
-cleaned_species_data1 |> 
+new_cleaned_species_data |> 
   ggplot(aes(x = taxon, y = proportion, fill = status)) + 
   geom_bar(stat = "identity", position = "fill") + 
   scale_fill_manual(values = status_colours) + # apply custom colors
@@ -179,7 +178,7 @@ ggplot(taxon_means_long, aes(x = taxon, y = mean_value, fill = variable)) +
   labs(x = "Taxon",
        y = expression(paste("Mean standardised ", italic("n"), "-gram frequency")),
        fill = NULL) +
-  scale_fill_manual(values = c("skyblue", "lightgreen"), 
+  scale_fill_manual(values = c("#10c66b", "#7a7bb6"), 
                     labels = c(expression(paste(italic("n"), "-gram common")),
                                expression(paste(italic("n"), "-gram science")))) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -200,8 +199,42 @@ Two estimates of species uniqueness are employed in this analysis. The first is 
 
 The second measure to describe species uniqueness is evolutionary distinctiveness (ED), which has received the most widespread use of all uniqueness measures [@Gumbs]. ED describes the species' relative contribution to the total evolutionary history of its clade [@Moore]. A more accurate proxy than genus size, ED is computed by first assigning a value to each branch in the species' phylogenetic tree, equal to the branch's length (measured in millions of years) divided by the number of species subtending it [@Isaac]. The ED of a species is then the sum of these values for all branches from which the species is descended [@Isaac]. For our analysis, ED data were obtained by published ED scores for mammals [@Gumbs], amphibians [@Isaac; @Safi; @Gumbs], birds [@Jetz; @Gumbs] and reptiles [@Gumbs], all obtained from the Evolutionary Distinctive Globally Endangered (EDGE) of Existence program [@EDGE]. To obtain ED scores, Isaac et al. [-@Isaac], Gumbs et al. [-@Gumbs], Safi et al. [-@Safi] and Jetz et al. [-@Jetz] assembled phylogenetic trees for extant mammalia, amphibians, birds or reptiles that were maximally inclusive (i.e., including all relevant species) and maximally resolved (given the available data). The authors typically built on previously established phylogenies, adding additional clades, dating the nodes with Markov processes, and combining molecular data and taxonomic constraints for data-deficient species to more comprehensively account for uncertainty. Thereafter, they estimated the species' contribution to species uniqueness using the ED algorithm described by Isaac et al. [-@Isaac]. At the time of the analysis, no data were yet available for fish, fungi, invertebrates or protists, and too few data ($n = 319/19,092$) were yet known for the plants in our study to be considered for analysis.
 
-We compare these two measures in @sec-appendix, plotting ED scores against genera size on species, for which ED scores were available. Although the relationship tends in the expected direction, whereby species in larger genera tend to be less evolutionarily distinct, only a very small proportion of the variance ($R^2 = 3.6%$) in the ED variable can be explained by the genus size variable. Consistent with Moore et al. [-@Moore], this shows that genus size is a only very weak measure of the genetic distinctiveness of a species. 
+In @fig-evdist_dist, we plot the distribution of the logarithm of the two uniqueness measures for four taxons of interest -- amphibians, birds, mammals and reptiles -- for which data on both measures are sufficiently available. A similar frequency distribution of genus size and ED score can be found among all taxons, except for amphibians. The distribution of amphibian genus size appears to be more left-skewed than the others, suggesting the presence of more polytypic genera and less species uniqueness. Rather contradictorily, the distribution of amphibian ED scores appears to centered around higher ED values, suggesting the presence of greater species uniqueness relative to other taxon. 
 
+```{r}
+#| label: fig-evdist_dist 
+#| echo: false
+#| warning: false
+#| message: false
+#| fig-cap: "Distribution of logarithm of two species uniqueness measures, for species in taxons for which both data are available."
+#| fig-pos: H
+
+taxa_list <- c("Amphibians", "Birds", "Mammals", "Reptiles")
+filtered_data <- cleaned_species_data[cleaned_species_data$taxon %in% taxa_list, ]
+
+# Plot
+p <- ggplot(filtered_data, aes(x = ngenus)) +
+  geom_histogram(binwidth = 0.15, fill = "gray", color = "black") +
+  facet_grid(taxon ~ ., scales = "free") +
+  theme_minimal() +
+  labs(x = "Log(Genus Size)", y = "Frequency") +
+  scale_x_log10() + 
+  theme(strip.text.y = element_text(size = 7))
+
+p2 <- ggplot(filtered_data, aes(x = evdist)) +
+  geom_histogram(binwidth = 0.1, fill = "gray", color = "black") +
+  facet_grid(taxon ~ ., scales = "free") +
+  theme_minimal() +
+  labs(x = "Log(ED Score)", y = "Frequency") + 
+  scale_x_log10() + 
+  theme(strip.text.y = element_text(size = 7))
+
+# Arranging the plots side by side
+library(gridExtra)
+grid.arrange(p, p2, ncol = 2)
+```
+
+To investigate this dilemma, we make a more direct comparison between these two measures in @sec-appendix, plotting ED scores against genera size for species, for which ED scores are available. Although the relationship tends in the expected direction, whereby species in larger genera tend to be less evolutionarily distinct, only a very small proportion of the variance ($R^2 = 3.6%$) in the ED variable can be explained by the genus size variable. Consistent with Moore et al. [-@Moore], this shows that genus size is a only very weak measure of the genetic distinctiveness of a species. 
 
 ### Listing of Species 
 
